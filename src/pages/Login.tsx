@@ -23,8 +23,8 @@ const Login: React.FC = () => {
     try {
       await login(email, password);
       navigate('/');
-    } catch (err) {
-      setError('Invalid email or password');
+    } catch (err: any) {
+      setError(err.message || 'Invalid email or password');
     } finally {
       setIsLoading(false);
     }
@@ -132,12 +132,12 @@ const Login: React.FC = () => {
             </p>
           </div>
 
-          {/* Demo Credentials */}
+          {/* Demo Note */}
           <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-600 mb-2">Demo credentials:</p>
-            <p className="text-xs text-gray-500">Email: demo@skillswap.com</p>
-            <p className="text-xs text-gray-500">Password: demo123</p>
-            <p className="text-xs text-gray-500 mt-1">Admin: admin@skillswap.com / admin123</p>
+            <p className="text-sm text-gray-600 mb-2">Backend Integration Active</p>
+            <p className="text-xs text-gray-500">
+              Connected to: {import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000'}
+            </p>
           </div>
         </div>
       </div>

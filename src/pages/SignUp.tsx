@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Mail, Lock, User, MapPin, CheckCircle } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, CheckCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const SignUp: React.FC = () => {
@@ -9,7 +9,6 @@ const SignUp: React.FC = () => {
     email: '',
     password: '',
     confirmPassword: '',
-    location: '',
     agreeToTerms: false
   });
   const [showPassword, setShowPassword] = useState(false);
@@ -17,6 +16,7 @@ const SignUp: React.FC = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
+  const { signup } = useAuth();
   const navigate = useNavigate();
 
   const handleInputChange = (field: string, value: any) => {
@@ -59,39 +59,16 @@ const SignUp: React.FC = () => {
 
     setIsLoading(true);
     try {
-      // TODO: Replace with actual API call
-      const response = await fetch('/api/auth/signup', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: formData.name,
-          email: formData.email,
-          password: formData.password,
-          location: formData.location
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Registration failed');
-      }
-
-      // For now, simulate success and redirect to login
+      await signup(formData.name, formData.email, formData.password);
+      
+      // Redirect to login with success message
       navigate('/login', { 
         state: { 
-          message: 'Account created successfully! Please sign in.' 
+          message: 'Account created successfully! Please sign in with your credentials.' 
         }
       });
     } catch (err: any) {
-      // Fallback for demo - simulate successful registration
-      console.log('Demo mode: Registration would be:', formData);
-      navigate('/login', { 
-        state: { 
-          message: 'Account created successfully! Please sign in.' 
-        }
-      });
+      setError(err.message || 'Registration failed. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -152,24 +129,6 @@ const SignUp: React.FC = () => {
                   onChange={(e) => handleInputChange('email', e.target.value)}
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Enter your email"
-                />
-              </div>
-            </div>
-
-            {/* Location Field */}
-            <div>
-              <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-2">
-                Location (Optional)
-              </label>
-              <div className="relative">
-                <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  id="location"
-                  type="text"
-                  value={formData.location}
-                  onChange={(e) => handleInputChange('location', e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="City, State/Country"
                 />
               </div>
             </div>

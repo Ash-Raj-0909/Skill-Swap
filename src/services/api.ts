@@ -1,7 +1,7 @@
-// API Configuration and Service Layer
-const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://your-backend-api.com/api' 
-  : 'http://localhost:3001/api';
+import ENV from '../config/env';
+
+// API Configuration using environment variables
+const API_BASE_URL = ENV.API_BASE_URL;
 
 // API Response Types
 export interface ApiResponse<T> {
@@ -11,14 +11,36 @@ export interface ApiResponse<T> {
   error?: string;
 }
 
-export interface PaginatedResponse<T> {
-  data: T[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
+export interface LoginResponse {
+  access_token: string;
+  token_type: string;
+  user: {
+    id: string;
+    email: string;
+    name: string;
   };
+}
+
+export interface SignupResponse {
+  message: string;
+  user: {
+    id: string;
+    email: string;
+    name: string;
+  };
+}
+
+export interface ProfileResponse {
+  id: string;
+  email: string;
+  name: string;
+  location?: string;
+  skillsOffered?: string[];
+  skillsWanted?: string[];
+  availability?: string[];
+  isPublic?: boolean;
+  rating?: number;
+  totalSwaps?: number;
 }
 
 // HTTP Client with error handling
@@ -47,15 +69,24 @@ class ApiClient {
 
     try {
       const response = await fetch(url, config);
-      const data = await response.json();
+      
+      // Handle different response types
+      let data;
+      const contentType = response.headers.get('content-type');
+      
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        data = await response.text();
+      }
 
       if (!response.ok) {
-        throw new Error(data.message || `HTTP error! status: ${response.status}`);
+        throw new Error(data.detail || data.message || `HTTP error! status: ${response.status}`);
       }
 
       return {
         success: true,
-        data: data.data || data,
+        data: data,
         message: data.message,
       };
     } catch (error) {
@@ -100,42 +131,36 @@ class ApiClient {
 // Create API client instance
 export const apiClient = new ApiClient(API_BASE_URL);
 
-// Authentication API
+// Authentication API - Updated with your backend endpoints
 export const authAPI = {
   login: (credentials: { email: string; password: string }) =>
-    apiClient.post('/auth/login', credentials),
+    apiClient.post<LoginResponse>('/auth/user/login', credentials),
   
   signup: (userData: { 
     name: string; 
     email: string; 
     password: string; 
-    location?: string 
   }) =>
-    apiClient.post('/auth/signup', userData),
+    apiClient.post<SignupResponse>('/auth/user/signup', userData),
   
-  logout: () =>
-    apiClient.post('/auth/logout'),
+  logout: () => {
+    // Clear local storage
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('refreshToken');
+    return Promise.resolve({ success: true });
+  },
   
-  refreshToken: () =>
-    apiClient.post('/auth/refresh'),
-  
-  forgotPassword: (email: string) =>
-    apiClient.post('/auth/forgot-password', { email }),
-  
-  resetPassword: (token: string, password: string) =>
-    apiClient.post('/auth/reset-password', { token, password }),
-  
-  verifyEmail: (token: string) =>
-    apiClient.post('/auth/verify-email', { token }),
+  getProfile: () =>
+    apiClient.get<ProfileResponse>('/profile'),
 };
 
 // Users API
 export const usersAPI = {
   getProfile: (userId?: string) =>
-    apiClient.get(`/users/profile${userId ? `/${userId}` : ''}`),
+    apiClient.get(`/profile${userId ? `/${userId}` : ''}`),
   
   updateProfile: (userData: Partial<any>) =>
-    apiClient.put('/users/profile', userData),
+    apiClient.put('/profile', userData),
   
   searchUsers: (params: {
     query?: string;
@@ -164,7 +189,7 @@ export const usersAPI = {
     apiClient.get(`/users/${userId}/stats`),
 };
 
-// Swap Requests API
+// Swap Requests API (placeholder - update when backend is ready)
 export const swapRequestsAPI = {
   getRequests: (type: 'sent' | 'received', status?: string) =>
     apiClient.get(`/swap-requests?type=${type}${status ? `&status=${status}` : ''}`),
@@ -187,7 +212,7 @@ export const swapRequestsAPI = {
     apiClient.delete(`/swap-requests/${requestId}`),
 };
 
-// Reviews API
+// Reviews API (placeholder - update when backend is ready)
 export const reviewsAPI = {
   getReviews: (type: 'received' | 'given', userId?: string) =>
     apiClient.get(`/reviews?type=${type}${userId ? `&userId=${userId}` : ''}`),
@@ -213,7 +238,7 @@ export const reviewsAPI = {
     apiClient.get(`/reviews/stats/${userId}`),
 };
 
-// Admin API
+// Admin API (placeholder - update when backend is ready)
 export const adminAPI = {
   getStats: () =>
     apiClient.get('/admin/stats'),
@@ -235,34 +260,9 @@ export const adminAPI = {
   
   updateUserStatus: (userId: string, action: 'suspend' | 'activate' | 'delete') =>
     apiClient.post(`/admin/users/${userId}/${action}`),
-  
-  getSwapRequests: (status?: string) =>
-    apiClient.get(`/admin/swap-requests${status ? `?status=${status}` : ''}`),
-  
-  moderateSwapRequest: (requestId: string, action: 'approve' | 'reject') =>
-    apiClient.post(`/admin/swap-requests/${requestId}/${action}`),
-  
-  getReviews: (params: { page?: number; limit?: number }) => {
-    const searchParams = new URLSearchParams();
-    Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        searchParams.append(key, value.toString());
-      }
-    });
-    return apiClient.get(`/admin/reviews?${searchParams.toString()}`);
-  },
-  
-  deleteReview: (reviewId: string) =>
-    apiClient.delete(`/admin/reviews/${reviewId}`),
-  
-  getReports: (status?: string) =>
-    apiClient.get(`/admin/reports${status ? `?status=${status}` : ''}`),
-  
-  resolveReport: (reportId: string, action: 'resolve' | 'dismiss') =>
-    apiClient.post(`/admin/reports/${reportId}/${action}`),
 };
 
-// Notifications API
+// Notifications API (placeholder - update when backend is ready)
 export const notificationsAPI = {
   getNotifications: (page?: number, limit?: number) =>
     apiClient.get(`/notifications?page=${page || 1}&limit=${limit || 20}`),
@@ -277,7 +277,7 @@ export const notificationsAPI = {
     apiClient.delete(`/notifications/${notificationId}`),
 };
 
-// File Upload API
+// File Upload API (placeholder - update when backend is ready)
 export const uploadAPI = {
   uploadProfilePhoto: (file: File) => {
     const formData = new FormData();
@@ -289,95 +289,4 @@ export const uploadAPI = {
       headers: {}, // Let browser set Content-Type for FormData
     });
   },
-  
-  uploadDocument: (file: File, type: string) => {
-    const formData = new FormData();
-    formData.append('document', file);
-    formData.append('type', type);
-    
-    return apiClient.request('/upload/document', {
-      method: 'POST',
-      body: formData,
-      headers: {}, // Let browser set Content-Type for FormData
-    });
-  },
 };
-
-// WebSocket connection for real-time features
-export class WebSocketService {
-  private ws: WebSocket | null = null;
-  private reconnectAttempts = 0;
-  private maxReconnectAttempts = 5;
-  private reconnectDelay = 1000;
-
-  connect(userId: string) {
-    const token = localStorage.getItem('authToken');
-    const wsUrl = `${API_BASE_URL.replace('http', 'ws')}/ws?token=${token}&userId=${userId}`;
-    
-    this.ws = new WebSocket(wsUrl);
-    
-    this.ws.onopen = () => {
-      console.log('WebSocket connected');
-      this.reconnectAttempts = 0;
-    };
-    
-    this.ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      this.handleMessage(data);
-    };
-    
-    this.ws.onclose = () => {
-      console.log('WebSocket disconnected');
-      this.attemptReconnect(userId);
-    };
-    
-    this.ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
-    };
-  }
-
-  private handleMessage(data: any) {
-    // Handle different message types
-    switch (data.type) {
-      case 'notification':
-        // Dispatch notification event
-        window.dispatchEvent(new CustomEvent('notification', { detail: data.payload }));
-        break;
-      case 'swap_request':
-        // Handle swap request updates
-        window.dispatchEvent(new CustomEvent('swapRequestUpdate', { detail: data.payload }));
-        break;
-      case 'message':
-        // Handle chat messages
-        window.dispatchEvent(new CustomEvent('newMessage', { detail: data.payload }));
-        break;
-      default:
-        console.log('Unknown message type:', data.type);
-    }
-  }
-
-  private attemptReconnect(userId: string) {
-    if (this.reconnectAttempts < this.maxReconnectAttempts) {
-      this.reconnectAttempts++;
-      setTimeout(() => {
-        console.log(`Attempting to reconnect... (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
-        this.connect(userId);
-      }, this.reconnectDelay * this.reconnectAttempts);
-    }
-  }
-
-  send(message: any) {
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify(message));
-    }
-  }
-
-  disconnect() {
-    if (this.ws) {
-      this.ws.close();
-      this.ws = null;
-    }
-  }
-}
-
-export const wsService = new WebSocketService();

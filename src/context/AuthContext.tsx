@@ -1,9 +1,11 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { AuthUser } from '../types';
+import { authAPI, LoginResponse, SignupResponse } from '../services/api';
 
 interface AuthContextType {
   user: AuthUser | null;
   login: (email: string, password: string) => Promise<void>;
+  signup: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
   isLoading: boolean;
 }
@@ -26,35 +28,80 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Check for stored auth token on app load
     const token = localStorage.getItem('authToken');
     if (token) {
-      // In a real app, validate token with backend
-      // For now, simulate a logged-in user
-      setUser({
-        id: '1',
-        name: 'John Doe',
-        email: 'john@example.com',
-        isAdmin: 'john@example.com' === 'admin@skillswap.com'
-      });
+      // Try to get user profile with the stored token
+      loadUserProfile();
+    } else {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }, []);
+
+  const loadUserProfile = async () => {
+    try {
+      const response = await authAPI.getProfile();
+      if (response.success && response.data) {
+        const userData = response.data;
+        setUser({
+          id: userData.id,
+          name: userData.name,
+          email: userData.email,
+          isAdmin: userData.email === 'admin@skillswap.com' // You can adjust this logic
+        });
+      } else {
+        // Token might be invalid, clear it
+        localStorage.removeItem('authToken');
+      }
+    } catch (error) {
+      console.error('Failed to load user profile:', error);
+      localStorage.removeItem('authToken');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await authAPI.login({ email, password });
       
-      const mockUser: AuthUser = {
-        id: '1',
-        name: 'John Doe',
-        email,
-        isAdmin: email === 'admin@skillswap.com'
-      };
-      
-      setUser(mockUser);
-      localStorage.setItem('authToken', 'mock-token');
+      if (response.success && response.data) {
+        const loginData = response.data as LoginResponse;
+        
+        // Store the token
+        localStorage.setItem('authToken', loginData.access_token);
+        
+        // Set user data
+        setUser({
+          id: loginData.user.id,
+          name: loginData.user.name,
+          email: loginData.user.email,
+          isAdmin: loginData.user.email === 'admin@skillswap.com'
+        });
+      } else {
+        throw new Error(response.error || 'Login failed');
+      }
     } catch (error) {
-      throw new Error('Login failed');
+      console.error('Login error:', error);
+      throw new Error(error instanceof Error ? error.message : 'Login failed');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const signup = async (name: string, email: string, password: string) => {
+    setIsLoading(true);
+    try {
+      const response = await authAPI.signup({ name, email, password });
+      
+      if (response.success && response.data) {
+        // Signup successful - user needs to login separately
+        // Some backends auto-login after signup, adjust as needed
+        console.log('Signup successful:', response.data);
+      } else {
+        throw new Error(response.error || 'Signup failed');
+      }
+    } catch (error) {
+      console.error('Signup error:', error);
+      throw new Error(error instanceof Error ? error.message : 'Signup failed');
     } finally {
       setIsLoading(false);
     }
@@ -62,11 +109,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('authToken');
+    authAPI.logout(); // This clears localStorage
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, login, signup, logout, isLoading }}>
       {children}
     </AuthContext.Provider>
   );
