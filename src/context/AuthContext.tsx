@@ -32,7 +32,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         id: '1',
         name: 'John Doe',
         email: 'john@example.com',
-        isAdmin: email === 'admin@skillswap.com'
+        isAdmin: 'john@example.com' === 'admin@skillswap.com'
       });
     }
     setIsLoading(false);
