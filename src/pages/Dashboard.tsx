@@ -141,8 +141,8 @@ const Dashboard: React.FC = () => {
   };
 
   const handleRequestSwap = (userId: string) => {
-    // TODO: Implement swap request functionality
     console.log('Request swap with user:', userId);
+    // This will now be handled by the UserCard component's modal
   };
 
   return (

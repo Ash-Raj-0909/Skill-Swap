@@ -4,6 +4,8 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import Header from './components/Layout/Header';
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
+import SignUp from './pages/SignUp';
+import AdminDashboard from './pages/AdminDashboard';
 import Profile from './pages/Profile';
 import EditProfile from './pages/EditProfile';
 import SwapRequests from './pages/SwapRequests';
@@ -31,6 +33,7 @@ const AppContent: React.FC = () => {
       {user && <Header />}
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<SignUp />} />
         <Route
           path="/"
           element={
@@ -76,6 +79,14 @@ const AppContent: React.FC = () => {
           element={
             <ProtectedRoute>
               <Reviews />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute>
+              <AdminDashboard />
             </ProtectedRoute>
           }
         />

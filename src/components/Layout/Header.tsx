@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, User, LogOut, Settings, MessageCircle, Star } from 'lucide-react';
+import { Search, User, LogOut, Settings, MessageCircle, Star, Bell, Shield } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 const Header: React.FC = () => {
@@ -39,6 +39,13 @@ const Header: React.FC = () => {
           {/* User Menu */}
           {user ? (
             <div className="flex items-center space-x-4">
+              <button className="relative text-gray-700 hover:text-blue-600 transition-colors">
+                <Bell className="w-5 h-5" />
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                  3
+                </span>
+              </button>
+              
               <Link
                 to="/requests"
                 className="flex items-center space-x-2 text-gray-700 hover:text-blue-600 transition-colors"
@@ -62,6 +69,16 @@ const Header: React.FC = () => {
                 <User className="w-5 h-5" />
                 <span className="hidden sm:block">{user.name}</span>
               </Link>
+              
+              {user.isAdmin && (
+                <Link
+                  to="/admin"
+                  className="text-gray-700 hover:text-blue-600 transition-colors"
+                  title="Admin Dashboard"
+                >
+                  <Shield className="w-5 h-5" />
+                </Link>
+              )}
               
               <Link
                 to="/settings"

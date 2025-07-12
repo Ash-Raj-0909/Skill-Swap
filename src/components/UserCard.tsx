@@ -1,22 +1,33 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Star, Clock, MessageCircle } from 'lucide-react';
+import RequestSwapModal from './RequestSwapModal';
 import type { User } from '../types';
 
 interface UserCardProps {
   user: User;
-  onRequestSwap: (userId: string) => void;
+  onRequestSwap?: (userId: string) => void;
 }
 
 const UserCard: React.FC<UserCardProps> = ({ user, onRequestSwap }) => {
   const navigate = useNavigate();
+  const [showRequestModal, setShowRequestModal] = React.useState(false);
 
   const handleViewProfile = () => {
     navigate(`/profile/${user.id}`);
   };
 
+  const handleRequestSwap = () => {
+    if (onRequestSwap) {
+      onRequestSwap(user.id);
+    } else {
+      setShowRequestModal(true);
+    }
+  };
+
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+    <>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
       {/* Profile Header */}
       <div className="flex items-start space-x-4 mb-4">
         <div 
@@ -112,6 +123,7 @@ const UserCard: React.FC<UserCardProps> = ({ user, onRequestSwap }) => {
         </button>
         <button
           onClick={() => onRequestSwap(user.id)}
+          onClick={handleRequestSwap}
           className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
         >
           <MessageCircle className="w-4 h-4" />
@@ -119,6 +131,18 @@ const UserCard: React.FC<UserCardProps> = ({ user, onRequestSwap }) => {
         </button>
       </div>
     </div>
+
+      {/* Request Swap Modal */}
+      <RequestSwapModal
+        isOpen={showRequestModal}
+        onClose={() => setShowRequestModal(false)}
+        targetUser={user}
+        onSuccess={() => {
+          // Handle success (e.g., show toast notification)
+          console.log('Swap request sent successfully!');
+        }}
+      />
+    </>
   );
 };
 
